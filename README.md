@@ -1,63 +1,96 @@
-Metabolic Data Pipeline
+# 🧬 Metabolic Data Pipeline
 
-An end-to-end pipeline for ingestion, preprocessing, analysis, and machine learning
-on metabolic and diabetes-related data. The system supports both cohort-level analysis
-and single-patient prediction with consent-aware data handling. The application includes
-a Flask-based dashboard and is fully Dockerized for reproducible execution.
+> A Dockerized end-to-end pipeline for ingestion, preprocessing, **analysis & visualization**,  
+> and machine learning on metabolic and diabetes-related data.
 
-----------------------------------------------------------------------
-1. High-level Workflows
-----------------------------------------------------------------------
+---
 
-Cohort workflow:
-User-provided cohort data
-→ Upload via dashboard
-→ Ingestion
-→ Preprocessing & integration (SQLite)
-→ Feature engineering & feature selection
-→ Feature store (CSV)
-→ Model training
-→ Model artifacts & metadata
+## 📌 Overview
 
-Single-patient workflow:
-User-provided single-patient data
-→ Upload via dashboard
-→ Ingestion
-→ Preprocessing
-→ Feature transformation (no refitting)
-→ Prediction
-→ Optional storage / retraining (based on consent)
+**Metabolic Data Pipeline** is a modular system designed for:
 
-----------------------------------------------------------------------
-2. Project Structure
-----------------------------------------------------------------------
+- Cohort-level analysis
+- Single-patient prediction
+- Consent-aware data handling
+- Interactive **analysis & visualization dashboard**
+- Reproducible execution using Docker
 
+The project integrates **data engineering, analytics, visualization, and machine learning**
+into a single, reproducible workflow.
+
+---
+
+## ✨ Key Features
+
+- 📥 Raw data ingestion (cohort & single patient)
+- 🧪 Preprocessing and feature engineering
+- 📊 Rich analysis & visualization dashboard
+- 🤖 Machine learning training and inference
+- 🔒 Explicit consent-aware data storage
+- 🐳 Fully Dockerized environment
+
+---
+
+## 🧠 High-level Workflows
+
+### Cohort workflow
+```
+Raw cohort data
+ → Upload via dashboard
+ → Ingestion
+ → Preprocessing & integration (SQLite)
+ → Feature engineering & selection
+ → Feature store (CSV)
+ → Model training
+ → Model artifacts & metadata
+```
+
+### Single-patient workflow
+```
+Raw single-patient data
+ → Upload via dashboard
+ → Ingestion
+ → Preprocessing
+ → Feature transformation (no refitting)
+ → Prediction
+ → Optional storage / retraining (based on consent)
+```
+
+---
+
+## 🗂 Project Structure
+
+```text
 metabolic-data-pipeline/
 ├── Dockerfile
 ├── requirements.txt
 ├── README.md
 ├── config/
-├── dashboard/
+├── dashboard/                  # Flask dashboard (UI + backend)
 ├── data/
-│   ├── raw/          (internal storage, managed by the app)
+│   ├── raw/                    # Internal storage (managed by the app)
 │   ├── processed/
 │   ├── uploads/
 │   └── database.db
-├── input_data/       (user-facing input folder)
-├── src/
+├── input_data/                 # User-facing input examples
+├── src/                        # Core pipeline implementation
 ├── tests/
 └── main.py
+```
 
-----------------------------------------------------------------------
-3. User Input Data (input_data/)
-----------------------------------------------------------------------
+---
 
-The input_data/ folder is intended for users to place raw datasets before uploading
-them via the dashboard UI. Files are NOT processed automatically; users must select
-them explicitly in the web interface.
+## 📁 User Input Data (`input_data/`)
 
-Expected structure:
+The `input_data/` directory is a **user-facing folder** intended to hold raw datasets
+*before* uploading them through the dashboard UI.
 
+> 📌 Files placed here are **not processed automatically**.  
+> Users explicitly select them in the web interface.
+
+### Expected structure
+
+```text
 input_data/
 ├── cohort/
 │   ├── cohort_pheno.csv
@@ -65,80 +98,119 @@ input_data/
 └── single_patient/
     ├── patient_0001_pheno.csv
     └── patient_0001_geno.csv
+```
 
-Purpose:
-- Provides a clear input format for users
-- Simplifies testing and onboarding
-- Keeps internal storage separate from user inputs
+---
 
-----------------------------------------------------------------------
-4. Internal Raw Data Storage (data/raw/)
-----------------------------------------------------------------------
+## 🗄 Internal Data Storage (`data/raw/`)
 
-The data/raw/ directory is used internally by the application to store uploaded data
-after ingestion. Users should not manually place files in this directory.
+- Managed **only by the application**
+- Written after ingestion and consent checks
+- Users should **not manually edit** this directory
 
-- Written only by the ingestion pipeline
-- Subject to consent rules
-- Ensures clean data provenance
+This separation ensures:
+- Clean data provenance
+- Safer handling of sensitive data
+- Clear distinction between input data and stored data
 
-----------------------------------------------------------------------
-5. Example Phenotypic Dataset
-----------------------------------------------------------------------
+---
 
-Cohort phenotypic data used for development is sampled (2,500 records) from:
+## 📊 Analysis & Visualization Dashboard
 
-Kaggle – 100,000 Diabetes Clinical Dataset
-https://www.kaggle.com/datasets/priyamchoksi/100000-diabetes-clinical-dataset
+A core component of the project is the **analysis and visualization layer** exposed
+via the Flask dashboard. These modules support exploratory data analysis, model
+diagnostics, and feature understanding.
 
-The dataset is used for research and demonstration purposes only.
+### Implemented analysis modules
 
-----------------------------------------------------------------------
-6. Running the Project with Docker (Recommended)
-----------------------------------------------------------------------
+| Module | Purpose |
+|------|--------|
+| `dataset_overview.py` | Dataset schema, size, missing values |
+| `distribution_analysis.py` | Numeric & categorical distributions |
+| `relationship_analysis.py` | Feature–target relationships |
+| `temporal_analysis.py` | Time-based and registry-date trends |
+| `snp_summary_analysis.py` | SNP-level summaries and distributions |
+| `model_support_analysis.py` | Model diagnostics, metrics, statistical tests |
 
-Requirements:
+These analyses support both **cohort-level insights** and **model interpretation**.
+
+---
+
+## 🐳 Running with Docker (Recommended)
+
+### Requirements
 - Docker Desktop
 
-Build the Docker image (from project root):
-
+### Build the image
+```bash
 docker build -t metabolic-pipeline .
+```
 
-Run the application:
-
+### Run the application
+```bash
 docker run -p 5000:5000 metabolic-pipeline
+```
 
 Open in browser:
+```
 http://localhost:5000
+```
 
-----------------------------------------------------------------------
-7. What the Dockerfile Does
-----------------------------------------------------------------------
+---
+
+## 🧩 What the Dockerfile Does
+
+The `Dockerfile`:
 
 - Uses an official Python base image
-- Sets a working directory inside the container
-- Installs Python dependencies
-- Copies project source code
-- Exposes port 5000
-- Starts the Flask dashboard
+- Sets a consistent working directory
+- Installs dependencies from `requirements.txt`
+- Copies the project source code
+- Exposes port `5000` for the dashboard
+- Starts the Flask application
 
 Docker removes the need for local Python, Conda, or virtual environments.
 
-----------------------------------------------------------------------
-8. Running Without Docker (Development Only)
-----------------------------------------------------------------------
+---
 
+## 🧪 Running Without Docker (Development Only)
+
+```bash
 pip install -r requirements.txt
 python dashboard/app.py
+```
 
 Offline training:
+```bash
 python main.py
+```
 
-----------------------------------------------------------------------
-9. Notes
-----------------------------------------------------------------------
+---
 
-- Place raw input files in input_data/
+## 📚 Example Dataset Source
+
+Cohort phenotypic data used for development is **sampled (2,500 records)** from:
+
+**Kaggle – 100,000 Diabetes Clinical Dataset**  
+https://www.kaggle.com/datasets/priyamchoksi/100000-diabetes-clinical-dataset
+
+Used for research and demonstration purposes only.
+
+---
+
+## 🧱 Design Principles
+
+- Separation of concerns
+- Consent-aware data flow
+- No feature leakage between training and inference
+- Reproducible experiments
+- Modular and extensible architecture
+
+---
+
+## 📝 Notes for Users & Reviewers
+
+- Place raw files in `input_data/`
 - Upload data only via the dashboard
-- Do not manually modify data/raw/
+- Do not manually modify `data/raw/`
 - Docker is the recommended execution method
