@@ -1,0 +1,2 @@
+patient_id,year,gender,age,location,race:africanamerican,race:asian,race:caucasian,race:hispanic,race:other,hypertension,heart_disease,smoking_history,bmi,hba1c_level,blood_glucose_level,diabetes
+2504,2019,Male,56,Ohio,1,0,0,0,0,0,0,former,49.42,6.2,160,1

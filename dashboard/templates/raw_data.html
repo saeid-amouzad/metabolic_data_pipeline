@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="layout">
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="main">
+
+        <h2>Import Raw Data</h2>
+
+        <div class="page-actions">
+            <button class="btn home-btn" onclick="return confirmLeaveToHome();">
+                ⌂ Home
+            </button>
+        </div>
+
+        <p>
+            You may add up to three datasets (phenotypic, genotypic, image/signal).
+            Each dataset will be validated and ingested separately.
+            Supported file formats include CSV, Excel, JPG, PNG, and MP3.
+        </p>
+
+        <hr>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <!-- Backend metadata for JS -->
+            <div id="cohort-meta"
+                 data-cohort-raw-exists="{{ 'true' if cohort_raw_exists else 'false' }}">
+            </div>
+
+            <!-- ================= METADATA ================= -->
+            <h3 class="section-title">Registry information</h3>
+
+            <div class="form-group inline">
+                <label>Registry date</label>
+                <input type="date"
+                       name="registry_date"
+                       value="{{ form_data.registry_date if form_data else '' }}"
+                       required>
+            </div>
+
+            <div class="form-group inline">
+                <label>
+                    <input type="checkbox" name="consent" value="yes">
+                    Store raw uploaded data (GDPR)
+                </label>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- ================= DATASETS ================= -->
+            <h3 class="section-title">Cohort datasets</h3>
+
+            <div id="data-container">
+                <!-- dynamically added dataset rows -->
+            </div>
+
+            <button type="button" class="btn" onclick="addDataRow()">
+                ➕ Add dataset
+            </button>
+
+            <hr class="section-divider">
+
+            <!-- ================= ACTIONS ================= -->
+            <div class="form-group inline">
+                <button type="button" class="btn" onclick="confirmReset()">
+                    🔄 Reset form
+                </button>
+
+                <div class="tooltip">
+                    <button type="submit" class="btn primary" id="submitBtn">
+                        ⬆ Upload
+                    </button>
+                    <span class="tooltip-text" id="submitTooltip">
+                        Please add both phenotypic and genotypic datasets.
+                    </span>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- ================= SIDEBAR ================= -->
+    <div class="sidebar">
+        <h3>Workflow status</h3>
+        <ul>
+            <li>{{ "✅" if workflow_status.ingestion else "⬜" }} Data ingestion</li>
+            <li>{{ "✅" if workflow_status.storage else "⬜" }} Storage</li>
+            <li>{{ "✅" if workflow_status.preprocessing else "⬜" }} Data preprocessing</li>
+            <li>{{ "✅" if workflow_status.feature else "⬜" }} Feature engineering</li>
+            <li>{{ "✅" if workflow_status.ml else "⬜" }} ML modeling</li>
+        </ul>
+    </div>
+
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+let dataCount = 0;
+const MAX_DATASETS = 3;
+let formDirty = false;
+let isSubmitting = false;
+
+let hasPhenotypic = false;
+let hasGenotypic = false;
+
+/* ----------------------------
+   Add dataset row
+---------------------------- */
+function addDataRow() {
+    if (dataCount >= MAX_DATASETS) {
+        alert("You can add up to three datasets only.");
+        return;
+    }
+
+    dataCount++;
+    formDirty = true;
+
+    const container = document.getElementById("data-container");
+    const row = document.createElement("div");
+    row.className = "data-row";
+
+    row.innerHTML = `
+        <h4 class="dataset-title">
+            Dataset ${dataCount}
+            <button type="button"
+                    class="btn danger"
+                    onclick="removeDataRow(this)">
+                ❌ Remove
+            </button>
+        </h4>
+
+        <div class="form-group inline">
+            <label>File</label>
+            <input type="file"
+                   name="file_${dataCount}"
+                   onchange="markDirty()">
+        </div>
+
+        <div class="form-group inline">
+            <label>Data type</label>
+            <select name="type_${dataCount}" onchange="handleTypeChange()">
+                <option value="">Select</option>
+                <option value="phenotypic">Phenotypic</option>
+                <option value="genotypic">Genotypic</option>
+                <option value="image">Image / Signal</option>
+            </select>
+        </div>
+
+        <div class="form-group inline">
+            <label>Source</label>
+            <input type="text"
+                   name="source_${dataCount}"
+                   placeholder="Hospital / Device"
+                   oninput="markDirty()">
+        </div>
+    `;
+
+    container.appendChild(row);
+    updateRequiredTypes();
+}
+
+/* ----------------------------
+   Remove dataset row
+---------------------------- */
+function removeDataRow(button) {
+    if (!confirm("Remove this dataset? All information will be lost.")) return;
+    button.closest(".data-row").remove();
+    dataCount--;
+    updateRequiredTypes();
+}
+
+/* ----------------------------
+   State helpers
+---------------------------- */
+function markDirty() {
+    formDirty = true;
+}
+
+function handleTypeChange() {
+    formDirty = true;
+    updateRequiredTypes();
+}
+
+function updateRequiredTypes() {
+    hasPhenotypic = false;
+    hasGenotypic = false;
+
+    document.querySelectorAll("select[name^='type_']").forEach(sel => {
+        if (sel.value === "phenotypic") hasPhenotypic = true;
+        if (sel.value === "genotypic") hasGenotypic = true;
+    });
+
+    updateSubmitButton();
+}
+
+function updateSubmitButton() {
+    const submitBtn = document.getElementById("submitBtn");
+    const tooltip = document.getElementById("submitTooltip");
+
+    const enabled = hasPhenotypic && hasGenotypic;
+    submitBtn.classList.toggle("disabled", !enabled);
+
+    tooltip.textContent = enabled
+        ? "Ready to submit."
+        : "Please add both phenotypic and genotypic datasets.";
+}
+
+/* ----------------------------
+   Reset
+---------------------------- */
+function confirmReset() {
+    if (confirm("This will reset the page and clear workflow status. Continue?")) {
+        window.location.href = window.location.pathname;
+    }
+}
+
+/* ----------------------------
+   Leave to Home
+---------------------------- */
+function confirmLeaveToHome() {
+    if (confirm("Leaving this page will discard all information. Continue?")) {
+        isSubmitting = true;
+        window.location.href = "/";
+    }
+    return false;
+}
+
+/* ----------------------------
+   Overwrite confirmation
+---------------------------- */
+const form = document.querySelector("form");
+const cohortMeta = document.getElementById("cohort-meta");
+const COHORT_RAW_EXISTS = cohortMeta?.dataset.cohortRawExists === "true";
+
+form.addEventListener("submit", function (e) {
+    if (COHORT_RAW_EXISTS && !isSubmitting) {
+        const ok = confirm(
+            "Cohort raw data already exists.\n\n" +
+            "Uploading new data will replace existing data.\n\n" +
+            "Do you want to proceed?"
+        );
+
+        if (!ok) {
+            e.preventDefault();
+            return;
+        }
+    }
+    isSubmitting = true;
+});
+
+/* ----------------------------
+   Warn on accidental leave
+---------------------------- */
+window.addEventListener("beforeunload", function (e) {
+    if (!formDirty || isSubmitting) return;
+    e.preventDefault();
+    e.returnValue = "";
+});
+</script>
+
+{% endblock %}

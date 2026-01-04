@@ -1,0 +1,2 @@
+patient_id,year,gender,age,location,race:africanamerican,race:asian,race:caucasian,race:hispanic,race:other,hypertension,heart_disease,smoking_history,bmi,hba1c_level,blood_glucose_level,diabetes
+2501,2019,Male,37,Tennessee,1,0,0,0,0,1,0,never,35.42,8.8,280,1

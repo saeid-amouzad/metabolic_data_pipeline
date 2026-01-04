@@ -1,0 +1,33 @@
+{
+  "model_name": "random_forest",
+  "trained_at": "2026-01-04T11:51:20.086160",
+  "selection_metric": "roc_auc",
+  "best_score": 0.978112,
+  "best_params": {
+    "max_depth": 10,
+    "n_estimators": 200
+  },
+  "n_features": 12,
+  "feature_names": [
+    "age",
+    "hypertension",
+    "bmi",
+    "hba1c_level",
+    "blood_glucose_level",
+    "metabolic_risk_score",
+    "rs61652270",
+    "rs7985481",
+    "rs9581931",
+    "rs7993114",
+    "rs9579128",
+    "rs2297316"
+  ],
+  "metrics": {
+    "accuracy": 0.91,
+    "precision": 0.9083665338645418,
+    "recall": 0.912,
+    "f1": 0.9101796407185628,
+    "roc_auc": 0.978112,
+    "threshold": 0.5
+  }
+}

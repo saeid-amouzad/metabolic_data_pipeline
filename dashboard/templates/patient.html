@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="layout">
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="main">
+
+        <h2>Single Patient Prediction</h2>
+
+        <div class="page-actions">
+            <button class="btn home-btn" onclick="return confirmLeaveToHome();">
+                ⌂ Home
+            </button>
+        </div>
+
+        <p>
+            Upload patient data (up to three datasets). The system will ingest the data,
+            preprocess it, generate a prediction using the trained ML model, and
+            optionally store or reuse the data based on your consent choices.
+        </p>
+
+        <hr>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <!-- ================= PATIENT METADATA ================= -->
+            <h3 class="section-title">Patient information</h3>
+
+            <div class="form-group inline">
+                <label>Patient ID</label>
+                <input type="text"
+                       name="patient_id"
+                       value="{{ form_data.patient_id if form_data else '' }}"
+                       required>
+            </div>
+
+            <div class="form-group inline">
+                <label>Registry date</label>
+                <input type="date"
+                       name="registry_date"
+                       value="{{ form_data.registry_date if form_data else '' }}"
+                       required>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- ================= CONSENT OPTIONS ================= -->
+            <h3 class="section-title">Consent options</h3>
+
+            <div class="consent-row">
+                <span class="consent-label">Store raw uploaded data (under GDPR regulations)</span>
+                <label class="consent-choice">
+                    <input type="radio" name="consent_raw" value="yes"> Yes
+                </label>
+                <label class="consent-choice">
+                    <input type="radio" name="consent_raw" value="no" checked> No
+                </label>
+            </div>
+
+            <div class="consent-row">
+                <span class="consent-label">Integrate processed data into cohort database</span>
+                <label class="consent-choice">
+                    <input type="radio" name="consent_integrate" value="yes"> Yes
+                </label>
+                <label class="consent-choice">
+                    <input type="radio" name="consent_integrate" value="no" checked> No
+                </label>
+            </div>
+
+            <div class="consent-row">
+                <span class="consent-label">Retrain ML model using this patient data</span>
+                <label class="consent-choice">
+                    <input type="radio" name="consent_retrain" value="yes"> Yes
+                </label>
+                <label class="consent-choice">
+                    <input type="radio" name="consent_retrain" value="no" checked> No
+                </label>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- ================= DATASETS ================= -->
+            <h3 class="section-title">Patient datasets</h3>
+
+            <div id="data-container">
+                <!-- dynamically added rows -->
+            </div>
+
+            <button type="button" class="btn" onclick="addDataRow()">
+                ➕ Add patient dataset
+            </button>
+
+            <hr class="section-divider">
+
+            <!-- ================= ACTIONS ================= -->
+            <div class="form-group inline">
+                <button type="button" class="btn" onclick="confirmReset()">
+                    🔄 Reset form
+                </button>
+
+                <div class="tooltip">
+                    <button type="submit" class="btn primary" id="submitBtn">
+                        ⬆ Upload & Predict
+                    </button>
+                    <span class="tooltip-text" id="submitTooltip">
+                        Phenotypic and genotypic datasets are required before prediction.
+                    </span>
+                </div>
+            </div>
+
+        </form>
+
+        <!-- ================= PREDICTION RESULT ================= -->
+        {% if prediction is not none %}
+        <div class="result-box">
+            <h3>Prediction Result</h3>
+            <p>
+                <strong>Predicted probability of Type 2 diabetes:</strong>
+                {{ prediction }}
+            </p>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- ================= SIDEBAR ================= -->
+    <div class="sidebar">
+        <h3>Workflow status</h3>
+        <ul>
+            <li>{{ "✅" if workflow_status.ingestion else "⬜" }} Data ingestion</li>
+            <li>{{ "✅" if workflow_status.preprocessing else "⬜" }} Data preprocessing</li>
+            <li>{{ "✅" if workflow_status.prediction else "⬜" }} ML prediction</li>
+            <li>{{ "✅" if workflow_status.raw_storage else "⬜" }} Raw data storage</li>
+            <li>{{ "✅" if workflow_status.integration else "⬜" }} Cohort integration</li>
+            <li>{{ "✅" if workflow_status.retraining else "⬜" }} Model retraining</li>
+        </ul>
+    </div>
+
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+let dataCount = 0;
+const MAX_DATASETS = 3;
+let formDirty = false;
+let isSubmitting = false;
+
+let hasPhenotypic = false;
+let hasGenotypic = false;
+
+function addDataRow() {
+    if (dataCount >= MAX_DATASETS) {
+        alert("You can add up to three datasets only.");
+        return;
+    }
+
+    dataCount++;
+    formDirty = true;
+
+    const container = document.getElementById("data-container");
+
+    const row = document.createElement("div");
+    row.className = "data-row";
+
+    row.innerHTML = `
+        <h4 class="dataset-title">
+            Dataset ${dataCount}
+            <button type="button"
+                    class="btn danger"
+                    onclick="removeDataRow(this)">
+                ❌ Remove
+            </button>
+        </h4>
+
+        <div class="form-group inline">
+            <label>File</label>
+            <input type="file" name="file_${dataCount}" onchange="markDirty()">
+        </div>
+
+        <div class="form-group inline">
+            <label>Data type</label>
+            <select name="type_${dataCount}" onchange="handleTypeChange()">
+                <option value="">Select</option>
+                <option value="phenotypic">Phenotypic</option>
+                <option value="genotypic">Genotypic</option>
+                <option value="image">Image / Signal</option>
+            </select>
+        </div>
+
+        <div class="form-group inline">
+            <label>Source</label>
+            <input type="text"
+                   name="source_${dataCount}"
+                   placeholder="Hospital / Device"
+                   oninput="markDirty()">
+        </div>
+    `;
+
+    container.appendChild(row);
+    updateRequiredTypes();
+}
+
+function removeDataRow(button) {
+    if (!confirm("Remove this dataset? All information will be lost.")) return;
+    button.closest(".data-row").remove();
+    dataCount--;
+    updateRequiredTypes();
+}
+
+function markDirty() {
+    formDirty = true;
+}
+
+function handleTypeChange() {
+    formDirty = true;
+    updateRequiredTypes();
+}
+
+function updateRequiredTypes() {
+    hasPhenotypic = false;
+    hasGenotypic = false;
+
+    document.querySelectorAll("select[name^='type_']").forEach(sel => {
+        if (sel.value === "phenotypic") hasPhenotypic = true;
+        if (sel.value === "genotypic") hasGenotypic = true;
+    });
+
+    updateSubmitButton();
+}
+
+function updateSubmitButton() {
+    const submitBtn = document.getElementById("submitBtn");
+    const tooltip = document.getElementById("submitTooltip");
+
+    const enabled = hasPhenotypic && hasGenotypic;
+    submitBtn.classList.toggle("disabled", !enabled);
+
+    tooltip.textContent = enabled
+        ? "Ready to submit."
+        : "Please add both phenotypic and genotypic datasets.";
+}
+
+function confirmReset() {
+    if (confirm("This will reset the page and remove all information. Continue?")) {
+        window.location.href = window.location.pathname;
+    }
+}
+
+function confirmLeaveToHome() {
+    if (confirm("Leaving this page will discard all information. Continue?")) {
+        isSubmitting = true;
+        window.location.href = "/";
+    }
+    return false;
+}
+
+document.querySelector("form").addEventListener("submit", () => {
+    isSubmitting = true;
+    formDirty = false;
+});
+
+window.addEventListener("beforeunload", function (e) {
+    if (!formDirty || isSubmitting) return;
+    e.preventDefault();
+    e.returnValue = "";
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,888 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- =====================================================
+     PAGE TITLE
+===================================================== -->
+<h1 class="page-title">Data Analysis &amp; Visualization</h1>
+<hr class="page-divider">
+
+<!-- =====================================================
+     PAGE ACTIONS - Back to Home button
+===================================================== -->
+<div class="page-actions">
+    <button class="btn home-btn" onclick="return confirmLeaveToHome();">
+        ⌂ Home
+    </button>
+</div>
+
+<!-- =====================================================
+     FLASH MESSAGES
+===================================================== -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<!-- =====================================================
+     HIDDEN DIV: Store analysis state for UI restoration
+===================================================== -->
+<div id="analysis-state"
+    data-active-step="{{ active_step if active_step else '' }}"
+    data-overview='{{ overview_state | tojson if overview_state else "{}" }}'
+    data-dist='{{ dist_state | tojson if dist_state else "{}" }}'
+    data-rel='{{ rel_state | tojson if rel_state else "{}" }}'
+    data-temporal='{{ temporal_state | tojson if temporal_state else "{}" }}'
+    data-model='{{ model_state | tojson if model_state else "{}" }}'>
+</div>
+
+
+<!-- =====================================================
+     MAIN LAYOUT
+     LEFT  (2/3): plots & results
+     RIGHT (1/3): steps A–D
+===================================================== -->
+<div class="analysis-layout">
+
+        <!-- ================= LEFT: ANALYSIS STEPS ================= -->
+    <div class="analysis-steps">
+
+        <!-- =====================================================
+             A. DATASET OVERVIEW
+        ===================================================== -->
+        <details id="step-A" open>
+            <summary class="step-title">A. Dataset Overview</summary>
+
+            <form method="POST">
+                <input type="hidden" name="analysis_type" value="overview">
+
+                <div class="form-group inline">
+                    <label for="dataset_overview">Dataset</label>
+                    <select id="dataset_overview" name="dataset_type" required>
+                        <option value="raw_pheno">Raw phenotype</option>
+                        <option value="raw_geno">Raw genotype</option>
+                        <option value="integrated">Integrated (DB)</option>
+                        <option value="features">Feature-selected</option>
+                    </select>
+                </div>
+
+                <button class="btn primary">Run overview</button>
+            </form>
+        </details>
+
+        <hr>
+
+        <!-- =====================================================
+             B. DISTRIBUTION ANALYSIS Collapsible
+        ===================================================== -->
+        <details id="step-B">
+            <summary class="step-title">B. Distribution Analysis</summary>
+
+            <form method="POST">
+                <input type="hidden" name="analysis_type" value="distribution">
+
+                <div class="form-group inline">
+                    <label for="dist_dataset">Dataset</label>
+                    <select
+                        id="dist_dataset"
+                        name="dataset_type"
+                        required
+                        onchange="loadFeatures('dist_dataset','dist_features')"
+                    >
+                        <option value="raw_pheno">Raw phenotypic</option>
+                        <option value="raw_geno">Raw genotypic</option>
+                        <option value="integrated">Integrated</option>
+                        <option value="features">Feature-selected</option>
+                    </select>
+                </div>
+
+                <div class="form-group inline">
+                    <!-- <label for="dist_features">Features (multi-select)</label> -->
+                    <label for="dist_features" class="tooltip-label">
+                        Features (multi-select)
+                        <span class="tooltip-icon">ⓘ</span>
+                        <span class="tooltip-text">
+                            Hold Ctrl (Windows/Linux) or Cmd (Mac) to select multiple features.
+                        </span>
+                    </label>
+                    <select
+                        id="dist_features"
+                        name="features"
+                        multiple
+                        required
+                        size="5"
+                        class="select-wide"
+                    >
+                    </select>
+
+                </div>
+
+                <div class="form-group inline">
+                    <label for="plot_type">Plot type</label>
+                    <select id="plot_type" name="plot_type">
+                        <option value="hist">Histogram</option>
+                        <option value="box">Boxplot</option>
+                    </select>
+                </div>
+
+                <div class="form-group inline">
+                    <label class="tooltip-label">
+                        <input type="checkbox" name="highlight_outliers">
+                        Highlight outliers
+                        <span class="tooltip-icon">ⓘ</span>
+                        <span class="tooltip-text">
+                            Highlight outliers only for boxplot,
+                            for either the raw genotypic or raw phenotypic data.
+                        </span>
+                    </label>
+                </div>
+
+                <button class="btn primary">Plot</button>
+            </form>
+        </details>
+
+        <hr>
+
+        <!-- =====================================================
+             C. RELATIONSHIP ANALYSIS
+        ===================================================== -->
+        <details id="step-C">
+            <summary class="step-title">C. Diabetes–Feature Relationship</summary>
+
+            <form method="POST">
+                <input type="hidden" name="analysis_type" value="relationship">
+
+                <div class="form-group inline">
+                    <label for="rel_feature">Feature</label>
+                    <select
+                        id="rel_feature"
+                        name="feature"
+                        required
+                        class="select-wide"
+                    >
+                    </select>
+                </div>
+
+                <div class="form-group inline">
+                    <label for="rel_plot_type" class="tooltip-label">
+                        Plot type
+                        <span class="tooltip-icon">ⓘ</span>
+                        <span class="tooltip-text">
+                                Grouped bar plots are used for categorical features
+                                (SNPs, binary, race, smoking).
+                        </span>
+                    </label>
+
+                    <select
+                        id="rel_plot_type"
+                        name="plot_type"
+                        class="select-wide"
+                        required
+                    >
+                        <option value="bar">Grouped bar</option>
+                        <option value="box">Boxplot</option>
+                        <option value="hist">Histogram (by class)</option>
+                        <option value="scatter">Scatter</option>
+                    </select>
+                </div>
+
+                <!-- Auto test only (kept explicit for clarity) -->
+                <input type="hidden" name="stat_test" value="auto">
+
+                <button class="btn primary">Analyze</button>
+            </form>
+        </details>
+
+        <hr>
+
+        <!-- =====================================================
+             D. TEMPORAL ANALYSIS
+        ===================================================== -->
+        <details id="step-D">
+            <summary class="step-title">D. Temporal Analysis</summary>
+
+            <form method="POST">
+                <input type="hidden" name="analysis_type" value="temporal">
+
+                <div class="form-group inline">
+                    <label>Temporal mode</label>
+                    <select name="temporal_mode">
+                        <option value="year" selected>Year (recommended)</option>
+                        <option value="registry_date">Registry date</option>
+                    </select>
+                </div>
+
+                <div class="form-group inline">
+                    <label>Plot</label>
+                    <select name="temporal_plot" required>
+                        <option value="cohort">Cohort size over time</option>
+                        <option value="prevalence">Diabetes prevalence over time</option>
+                        <option value="feature">Feature trend over time</option>
+                    </select>
+                </div>
+
+                <div class="form-group inline">
+                    <label>Feature (for feature trend)</label>
+                    <select id="temporal_feature" name="feature" class="select-wide">
+                        <option value="">-- none --</option>
+                    </select>
+                </div>
+
+                <div class="form-group inline">
+                    <label>Aggregation</label>
+                    <select name="agg">
+                        <option value="mean">Mean</option>
+                        <option value="median">Median</option>
+                    </select>
+                </div>
+
+                <button class="btn primary">Run temporal analysis</button>
+            </form>
+        </details>
+        
+        <hr>
+
+        <!-- =====================================================
+             E. FEATURE SELECTION & MODELING SUPPORT
+        ===================================================== -->
+        <details id="step-E">
+            <summary class="step-title">E. Feature Selection & Modeling Support</summary>
+
+            <form method="POST">
+                <input type="hidden" name="analysis_type" value="model_support">
+
+                <div class="form-group inline">
+                    <label for="support_option">Options</label>
+                    <select
+                        id="support_option"
+                        name="support_option"
+                        required
+                        class="select-wide"
+                    >
+                        <option value="correlation">Feature correlation heatmap</option>
+                        <option value="stat_tests">
+                            Statistical feature tests (t-test & Chi-square)
+                        </option>
+                        <option value="confusion">Confusion matrix</option>
+                        <option value="roc">ROC curve</option>
+                        <option value="pr">Precision–Recall curve</option>
+                        <option value="metrics">Model metrics</option>
+                    </select>
+                </div>
+
+                <!-- Button on its own line -->
+                <button class="btn primary">Run analysis</button>
+            </form>
+        </details>
+
+        <hr>
+
+        <!-- =====================================================
+             F. SNP SUMMARY
+        ===================================================== -->
+        <details id="step-F">
+            <summary class="step-title">F. SNP Summary Analysis</summary>
+
+            <form method="POST">
+                <input type="hidden" name="analysis_type" value="snp_summary">
+
+                <div class="form-group inline">
+                    <label for="snp_option">Analysis group</label>
+                    <select
+                        id="snp_option"
+                        name="snp_option"
+                        required
+                        class="select-wide"
+                    >
+                        <option value="overview">SNP Overview</option>
+                        <option value="association">SNP–Diabetes Association</option>
+                    </select>
+                </div>
+
+                <button class="btn primary">Run SNP analysis</button>
+            </form>
+        </details>
+
+        <hr>
+
+        <!-- =====================================================
+             GLOBAL RESET (A–E)
+        ===================================================== -->
+
+        <form onsubmit="return confirmReset();">
+            <button type="submit" class="btn danger">
+                Reset all analyses
+            </button>
+        </form>
+
+    </div>
+    
+    <!-- ================= RIGHT: OUTPUT ================= -->
+    <div class="analysis-output">
+
+        {% if summary %}
+            <div class="dataset-overview">
+
+                <h4 class="section-title">Dataset overview</h4>
+
+                <!-- ================= META INFO ================= -->
+                <div class="overview-meta">
+                    <p class="dataset-name">
+                        <strong>{{ summary.dataset_name }}</strong>
+                    </p>
+
+                    <div class="overview-stats">
+                        <span class="badge">Rows (patients): {{ summary.n_rows }}</span>
+                        <span class="badge">Columns (features): {{ summary.n_columns }}</span>
+
+                        {% if summary.date_range %}
+                            <span class="badge">
+                                Registry: {{ summary.date_range.start }} → {{ summary.date_range.end }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- ================= COLUMNS (collapsible) ================= -->
+                <details open>
+                    <summary class="subsection-title">Columns</summary>
+
+                    <ul class="column-list">
+                        {% for col in summary.columns %}
+                            <li>{{ col }}</li>
+                        {% endfor %}
+                    </ul>
+                </details>
+
+                <hr class="section-divider">
+
+                <!-- ================= MISSING VALUES (collapsible) ================= -->
+                
+                <details open>
+                    <summary class="subsection-title">Missing values</summary>
+
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Missing</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for col, cnt in summary.missing_values.items() %}
+                                <tr>
+                                    <td>{{ col }}</td>
+                                    <td class="{% if cnt > 0 %}warn{% endif %}">
+                                        {{ cnt }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </details>
+
+                <hr class="section-divider">
+
+                {% if summary.numeric_summary %}
+                    <!-- ================= NUMERIC SUMMARY (collapsible) ================= 
+                     collapsed by default (now open in <details>)-->
+
+                    <details>
+                        <summary class="subsection-title">Numeric summary</summary>
+
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>Mean</th>
+                                    <th>Std</th>
+                                    <th>Min</th>
+                                    <th>Max</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Exclude patient_id from numeric summary -->
+                                {% for feat, stats in summary.numeric_summary.items() %}
+                                    {% if feat != "patient_id" %}
+                                        <tr>
+                                            <td>{{ feat }}</td>
+                                            <td>{{ stats.mean }}</td>
+                                            <td>{{ stats.std }}</td>
+                                            <td>{{ stats.min }}</td>
+                                            <td>{{ stats.max }}</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </details>
+
+                    <hr class="section-divider">
+
+                {% endif %}
+
+            </div>
+        {% endif %}
+
+        <!-- ================= DISTRIBUTION PLOTS ================= -->
+
+        {% for p in dist_plots %}
+            <img
+                src="{{ url_for('static', filename=p) }}"
+                class="plot-img"
+                alt=""
+            >
+        {% endfor %}
+
+        {% if rel_plot %}
+            <img
+                src="{{ url_for('static', filename=rel_plot) }}"
+                class="plot-img"
+                alt=""
+            >
+        {% endif %}
+
+
+        <!-- ================= SNP SUMMARY PLOTS ================= -->
+
+        {% if plot_sig %}
+            <h4 class="section-title">SNP Summary: Significant SNPs by Gene</h4>
+            <img
+                src="{{ url_for('static', filename=plot_sig) }}"
+                class="plot-img"
+                alt=""
+            >
+        {% endif %}
+
+        {% if plot_freq %}
+            <h4 class="section-title">SNP Summary: Genotype Frequency Distribution</h4>
+            <img
+                src="{{ url_for('static', filename=plot_freq) }}"
+                class="plot-img"
+                alt=""
+            >
+        {% endif %}
+
+        {% if plot_stack %}
+            <h4 class="section-title">SNP Summary: Genotype Frequency Stacked by Diabetes Status</h4>
+            <img
+                src="{{ url_for('static', filename=plot_stack) }}"
+                class="plot-img"
+                alt=""
+            >
+        {% endif %}
+
+        <!-- ================= BASIC SNP PLOTS ================= -->
+        {% if plot_maf %}
+            <img
+                src="{{ url_for('static', filename=plot_maf) }}"
+                class="plot-img"
+                alt=""
+            >
+        {% endif %}
+
+        {% if plot_var %}
+            <img
+                src="{{ url_for('static', filename=plot_var) }}"
+                class="plot-img"
+                alt=""
+            >
+        {% endif %}
+
+        <!-- ================= TEMPORAL PLOTS ================= -->
+
+        {% if plot_temporal_size %}
+            <img src="{{ url_for('static', filename=plot_temporal_size) }}" class="plot-img">
+        {% endif %}
+
+        {% if plot_temporal_prev %}
+            <img src="{{ url_for('static', filename=plot_temporal_prev) }}" class="plot-img">
+        {% endif %}
+
+        {% if plot_temporal_feat %}
+            <img src="{{ url_for('static', filename=plot_temporal_feat) }}" class="plot-img">
+        {% endif %}
+
+        <!-- ================= F. MODEL SUPPORT PLOTS ================= -->
+
+        {% if plot_corr %}
+            <h4 class="section-title">Model support: Feature correlation</h4>
+            <img src="{{ url_for('static', filename=plot_corr) }}" class="plot-img">
+        {% endif %}
+
+        {% if plot_cm %}
+            <h4 class="section-title">Model support: Confusion matrix</h4>
+            <img src="{{ url_for('static', filename=plot_cm) }}" class="plot-img">
+        {% endif %}
+
+        {% if plot_roc %}
+            <h4 class="section-title">Model support: ROC curve</h4>
+            <img src="{{ url_for('static', filename=plot_roc) }}" class="plot-img">
+        {% endif %}
+
+        {% if plot_pr %}
+            <h4 class="section-title">Model support: Precision–Recall curve</h4>
+            <img src="{{ url_for('static', filename=plot_pr) }}" class="plot-img">
+        {% endif %}
+
+        <!-- ================= MODEL METRICS ================= -->
+        {% if metrics %}
+            <h4 class="section-title">Model support: Metrics</h4>
+
+            <div class="metrics-card">
+                <div class="metric-row">
+                    <span class="metric-label">Accuracy</span>
+                    <span class="metric-value">{{ "%.2f"|format(metrics.accuracy) }}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">F1 score</span>
+                    <span class="metric-value">{{ "%.3f"|format(metrics.f1) }}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Precision</span>
+                    <span class="metric-value">{{ "%.3f"|format(metrics.precision) }}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Recall</span>
+                    <span class="metric-value">{{ "%.3f"|format(metrics.recall) }}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">ROC–AUC</span>
+                    <span class="metric-value">{{ "%.2f"|format(metrics.roc_auc) }}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Threshold</span>
+                    <span class="metric-value">{{ "%.2f"|format(metrics.threshold) }}</span>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- ================= STATISTICAL TESTS OUTPUT ================= -->
+
+        {% if plot_ttest %}
+            <h4 class="section-title">
+                Model support: t-test (continuous features)
+            </h4>
+            <img
+                src="{{ url_for('static', filename=plot_ttest) }}"
+                class="plot-img"
+                alt=""
+            >
+        {% endif %}
+
+        {% if plot_chi2 %}
+            <h4 class="section-title">
+                Model support: Chi-square (categorical & SNP features)
+            </h4>
+            <img
+                src="{{ url_for('static', filename=plot_chi2) }}"
+                class="plot-img"
+                alt=""
+            >
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script>
+/* -------------------------------------------------------
+   Page state flags
+------------------------------------------------------- */
+let formDirty = false;
+let isSubmitting = false;
+
+/* -------------------------------------------------------
+   Read server-side analysis state (safe pattern)
+------------------------------------------------------- */
+const stateEl = document.getElementById("analysis-state");
+
+const overviewState = stateEl ? JSON.parse(stateEl.dataset.overview || "{}") : {};
+const distState     = stateEl ? JSON.parse(stateEl.dataset.dist || "{}") : {};
+const relState      = stateEl ? JSON.parse(stateEl.dataset.rel || "{}") : {};
+const temporalState = stateEl ? JSON.parse(stateEl.dataset.temporal || "{}") : {};
+const modelState    = stateEl ? JSON.parse(stateEl.dataset.model || "{}") : {};
+
+/* -------------------------------------------------------
+   Track user interaction with forms
+------------------------------------------------------- */
+document.querySelectorAll("form").forEach(form => {
+
+    /* Mark page as dirty on any change */
+    form.addEventListener("change", () => {
+        formDirty = true;
+    });
+
+    /* Mark intentional submit (prevents warning) */
+    form.addEventListener("submit", () => {
+        isSubmitting = true;
+    });
+});
+
+/* -------------------------------------------------------
+   Confirm reset form:
+   Workflow status resets & all analyses disappear
+------------------------------------------------------- */
+function confirmReset() {
+    const ok = confirm(
+        "This will reset the page and remove all analyses.\n\nDo you want to continue?"
+    );
+
+    if (ok) {
+        isSubmitting = true;           // prevent unload warning
+        window.location.href = window.location.pathname;
+    }
+
+    return false;  // always block default submit
+}
+
+/* -------------------------------------------------------
+   Confirm leaving page to Home
+------------------------------------------------------- */
+function confirmLeaveToHome() {
+    const ok = confirm(
+        "By leaving this page, all current information and analyses will be lost.\n\nDo you want to continue?"
+    );
+
+    if (ok) {
+        isSubmitting = true;   // disable beforeunload warning
+        window.location.href = "/";
+    }
+
+    return false;
+}
+
+/* -------------------------------------------------------
+   Warn on accidental page leave only
+------------------------------------------------------- */
+window.addEventListener("beforeunload", function (e) {
+    if (!formDirty || isSubmitting) return;
+    e.preventDefault();
+    e.returnValue = "";
+});
+
+/* -------------------------------------------------------
+   Load features dynamically based on dataset selection
+------------------------------------------------------- */
+
+function loadFeatures(datasetSelectId, featureSelectId) {
+    const datasetSelect = document.getElementById(datasetSelectId);
+    const featureSelect = document.getElementById(featureSelectId);
+
+    if (!datasetSelect || !featureSelect) {
+        console.warn("Feature loader: elements not found yet");
+        return;
+    }
+
+    const dataset = datasetSelect.value;
+
+    fetch(`/analysis/features?dataset_type=${dataset}`)
+        .then(res => res.json())
+        .then(data => {
+            featureSelect.innerHTML = "";
+
+            if (!data.features || data.features.length === 0) {
+                const opt = document.createElement("option");
+                opt.text = "No features available";
+                opt.disabled = true;
+                featureSelect.appendChild(opt);
+                return;
+            }
+
+            data.features.forEach(f => {
+                const opt = document.createElement("option");
+                opt.value = f;
+                opt.text = f;
+                featureSelect.appendChild(opt);
+            });
+        })
+        .catch(err => {
+            console.error("Feature load failed:", err);
+            alert("Could not load features for the selected dataset.");
+        });
+}
+
+/* ------------------------------------------
+   Ensure initial feature load AFTER DOM ready
+------------------------------------------ */
+document.addEventListener("DOMContentLoaded", function () {
+
+    /* ------------------------------------------
+    Restore which step should be open
+    ------------------------------------------ */
+    const activeStep = stateEl?.dataset.activeStep;
+
+    if (activeStep) {
+        // Close all steps first
+        document.querySelectorAll("details[id^='step-']")
+            .forEach(d => d.removeAttribute("open"));
+
+        // Open the active step
+        const activeDetails = document.getElementById(`step-${activeStep}`);
+        if (activeDetails) {
+            activeDetails.setAttribute("open", "true");
+            activeDetails.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }
+
+    // Step B
+    loadFeatures("dist_dataset", "dist_features");
+
+    // Step C (integrated only, relationship features)
+    fetch("/analysis/features?dataset_type=integrated&mode=relationship")
+
+        .then(res => res.json())
+        .then(data => {
+            const sel = document.getElementById("rel_feature");
+            sel.innerHTML = "";
+            
+            data.features.forEach(f => {
+                const opt = document.createElement("option");
+                opt.value = f;
+                opt.text = f;
+                sel.appendChild(opt);
+            });
+        });
+
+    // Step D (temporal features): feature list (numeric only, integrated)
+    fetch("/analysis/features?dataset_type=integrated&mode=relationship")
+        .then(res => res.json())
+        .then(data => {
+            const sel = document.getElementById("temporal_feature");
+            if (!sel) return;
+
+            data.features.forEach(f => {
+                if (!f.includes("(encoded)")) {
+                    const opt = document.createElement("option");
+                    opt.value = f;
+                    opt.text = f;
+                    sel.appendChild(opt);
+                }
+            });
+        });
+
+    /* ----------------------------
+    Restore Step A
+    ---------------------------- */
+    if (overviewState) {
+        const sel = document.getElementById("dataset_overview");
+        if (sel) sel.value = overviewState.dataset_type;
+    }
+
+    /* ----------------------------
+    Restore Step B
+    ---------------------------- */
+    if (distState) {
+        document.getElementById("dist_dataset").value = distState.dataset_type;
+        document.getElementById("plot_type").value = distState.plot_type;
+
+        const cb = document.querySelector('input[name="highlight_outliers"]');
+        if (cb) cb.checked = distState.highlight_outliers;
+
+        setTimeout(() => {
+            const sel = document.getElementById("dist_features");
+            [...sel.options].forEach(o => {
+                if (distState.features.includes(o.value)) {
+                    o.selected = true;
+                }
+            });
+        }, 300);
+    }
+
+    /* ----------------------------
+    Restore Step C
+    ---------------------------- */
+    if (relState) {
+        document.getElementById("rel_plot_type").value = relState.plot_type;
+
+        setTimeout(() => {
+            const sel = document.getElementById("rel_feature");
+            sel.value = relState.feature;
+            sel.dispatchEvent(new Event("change")); // re-apply plot rules
+        }, 300);
+    }
+
+    /* ----------------------------
+    Restore Step D
+    ---------------------------- */
+    if (temporalState) {
+        document.querySelector('select[name="temporal_mode"]').value = temporalState.mode;
+        document.querySelector('select[name="temporal_plot"]').value = temporalState.plot_choice;
+        document.querySelector('select[name="agg"]').value = temporalState.agg;
+
+        if (temporalState.feature) {
+            setTimeout(() => {
+                document.getElementById("temporal_feature").value = temporalState.feature;
+            }, 300);
+        }
+    }
+
+    /* ----------------------------
+    Restore Step E
+    ---------------------------- */
+    if (modelState) {
+        document.getElementById("support_option").value = modelState.option;
+    }
+});
+
+
+//   Step C: Adjust relationship plot options based on feature type
+document.getElementById("rel_feature")?.addEventListener("change", function () {
+    const plotSelect = document.getElementById("rel_plot_type");
+    const feature = this.value;
+
+    const isCategorical =
+        feature.startsWith("rs") ||
+        feature === "race (encoded)" ||
+        feature === "smoking (encoded)" ||
+        ["gender", "hypertension", "heart_disease"].includes(feature);
+
+    [...plotSelect.options].forEach(opt => {
+        if (opt.value !== "bar") {
+            opt.disabled = isCategorical;
+        } else {
+            opt.disabled = false;
+        }
+    });
+
+    // Force grouped bar if categorical
+    if (isCategorical) {
+        plotSelect.value = "bar";
+    }
+});
+
+// Step B: Enable/disable outlier option based on dataset & plot type
+function updateOutlierOption() {
+    const dataset = document.getElementById("dist_dataset")?.value;
+    const plotType = document.getElementById("plot_type")?.value;
+    const checkbox = document.querySelector(
+        'input[name="highlight_outliers"]'
+    );
+
+    if (!checkbox) return;
+
+    const enabled =
+        plotType === "box" &&
+        (dataset === "raw_pheno" || dataset === "raw_geno");
+
+    checkbox.disabled = !enabled;
+    if (!enabled) checkbox.checked = false;
+}
+
+document.getElementById("dist_dataset")
+    ?.addEventListener("change", updateOutlierOption);
+document.getElementById("plot_type")
+    ?.addEventListener("change", updateOutlierOption);
+
+document.addEventListener("DOMContentLoaded", updateOutlierOption);
+
+</script>
+
+{% endblock %}

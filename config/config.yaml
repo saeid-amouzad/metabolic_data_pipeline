@@ -1,0 +1,10 @@
+modeling:
+  target_col: diabetes
+  test_size: 0.2
+  random_state: 42
+  metric: roc_auc
+
+paths:
+  features: data/processed/features.csv
+  artifacts: src/models/artifacts
+  metadata: src/models/artifacts/model_metadata.json

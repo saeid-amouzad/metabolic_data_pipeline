@@ -1,0 +1,481 @@
+/* =====================================================
+   GLOBAL / BASE STYLES
+===================================================== */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f6f8fa;
+}
+
+.container {
+    padding: 40px;
+}
+
+
+/* =====================================================
+   HOME PAGE (index.html)
+   ⚠️ ALL classes below are USED — DO NOT REMOVE
+===================================================== */
+
+.center-box {
+    text-align: center;
+}
+
+.title {
+    font-size: 36px;
+    font-weight: bold;
+}
+
+.subtitle {
+    font-size: 18px;
+    margin-bottom: 30px;
+}
+
+.options {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.option-card {
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    text-decoration: none;
+    color: black;
+    width: 220px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+
+/* =====================================================
+   GENERAL LAYOUT (Raw / Patient / Analysis)
+===================================================== */
+
+.layout {
+    display: flex;
+    gap: 30px;
+}
+
+.main {
+    flex: 1;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.sidebar {
+    width: 250px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+.btn {
+    padding: 10px 15px;
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+.btn.primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn.danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn.danger:hover {
+    background-color: #c82333;
+}
+
+/* Disabled buttons (submit protection) */
+button:disabled,
+.btn.disabled {
+    background-color: #cfd4da;
+    color: #6c757d;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
+
+
+/* =====================================================
+   PAGE ACTIONS (Home button, etc.)
+===================================================== */
+
+.page-actions {
+    margin-bottom: 20px;
+}
+
+.home-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+
+/* =====================================================
+   FLASH MESSAGES
+===================================================== */
+
+.flash-container {
+    margin-bottom: 20px;
+}
+
+.flash {
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.flash.error {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+}
+
+.flash.success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+}
+
+.flash.info {
+    background-color: #cff4fc;
+    color: #055160;
+    border: 1px solid #b6effb;
+}
+
+
+/* =====================================================
+   INLINE FORM SYSTEM (USED EVERYWHERE)
+===================================================== */
+
+.form-group.inline {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-group.inline label {
+    min-width: 90px;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Unified input widths (consistency across pages) */
+.form-group.inline input[type="text"],
+.form-group.inline input[type="date"],
+.form-group.inline input[type="file"],
+.form-group.inline select {
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+    box-sizing: border-box;
+    font-size: 16px;
+    padding: 6px 10px;
+}
+
+/* Wider selects where needed */
+.select-wide {
+    min-width: 300px;
+}
+
+
+/* =====================================================
+   CONSENT ROWS (Patient page)
+===================================================== */
+
+.consent-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.consent-choice {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: normal;
+}
+
+
+/* =====================================================
+   DATASET BLOCKS (Raw + Patient pages)
+===================================================== */
+
+.dataset-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 24px 0 16px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.data-row {
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #eaecef;
+}
+
+
+/* =====================================================
+   TOOLTIP SYSTEM
+===================================================== */
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-icon {
+    margin-left: 6px;
+    font-size: 0.85em;
+    cursor: pointer;
+    color: #666;
+}
+
+.tooltip-text {
+    display: none;
+    position: absolute;
+    background: #333;
+    color: #fff;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    width: 260px;
+    z-index: 100;
+}
+
+.tooltip:hover .tooltip-text,
+label:hover .tooltip-text {
+    display: block;
+}
+
+
+/* =====================================================
+   ANALYSIS PAGE
+===================================================== */
+
+/* Page title */
+.page-title {
+    text-align: center;
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.page-divider {
+    width: 60%;
+    margin: 0 auto 30px auto;
+}
+
+/* Main layout */
+.analysis-layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+.analysis-steps,
+.analysis-output {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+/* Plot images */
+.plot-img {
+    max-width: 100%;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+
+/* =====================================================
+   DATASET OVERVIEW (Analysis – Step A)
+===================================================== */
+
+.dataset-overview {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.section-title {
+    margin-bottom: 12px;
+    font-size: 20px;
+}
+
+.subsection-title {
+    margin-top: 24px;
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+
+.section-divider {
+    border: none;
+    border-top: 1px solid #e1e4e8;
+    margin: 18px 0;
+}
+
+/* Overview metadata */
+.overview-meta {
+    background: #f8fafc;
+    padding: 12px 14px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.dataset-name {
+    margin-bottom: 6px;
+    font-size: 15px;
+}
+
+.overview-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 13px;
+    color: #444;
+}
+
+/* Summary tables */
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.summary-table th {
+    text-align: left;
+    padding: 4px 8px;
+    background: #f1f3f5;
+    font-weight: 600;
+}
+
+.summary-table td {
+    padding: 4px 8px;
+    line-height: 1.3;
+}
+
+.summary-table tbody tr {
+    border-bottom: 1px solid #eaecef;
+}
+
+.summary-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.summary-table td.warn {
+    color: #b02a37;
+    font-weight: 600;
+}
+
+/* Column list */
+.column-list {
+    columns: 2;
+    column-gap: 30px;
+    padding-left: 18px;
+    font-size: 13px;
+}
+
+.column-list li {
+    margin-bottom: 4px;
+}
+
+/* Badges */
+.badge {
+    background: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+
+/* =====================================================
+   COLLAPSIBLE DETAILS (Analysis steps)
+===================================================== */
+
+details {
+    margin-bottom: 16px;
+}
+
+summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Arrow indicator */
+details > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 6px;
+    transition: transform 0.2s ease;
+}
+
+details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+/* Step titles */
+.step-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+
+/* =====================================================
+   MODEL METRICS (Analysis – Step E)
+===================================================== */
+
+.metrics-card {
+    max-width: 420px;
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 14px 16px;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.metric-row:last-child {
+    border-bottom: none;
+}
+
+.metric-label {
+    font-size: 0.95rem;
+    color: #444;
+}
+
+.metric-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #222;
+}

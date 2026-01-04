@@ -1,0 +1,47 @@
+phenotypic:
+  selected:
+  - age
+  - hypertension
+  - bmi
+  - hba1c_level
+  - blood_glucose_level
+  - metabolic_risk_score
+  dropped:
+  - age_group
+  - bmi_group
+  - gender
+  - heart_disease
+  - smoking_ordinal
+  thresholds:
+    phenotype_correlation_threshold: 0.8
+    phenotype_target_corr_threshold: 0.2
+genotype:
+  selected:
+  - rs61652270
+  - rs7985481
+  - rs9581931
+  - rs7993114
+  - rs9579128
+  - rs2297316
+  dropped:
+  - rs60004782
+  - rs9554188
+  - rs9581927
+  - rs9581929
+  - rs4424773
+  - rs9554193
+  - rs7995917
+  - rs11618581
+  - rs9554197
+  - rs11618036
+  - rs11618832
+  - rs11616678
+  - rs11618052
+  - rs9579127
+  - rs7999100
+  - rs8000004
+  - rs9581943
+  thresholds:
+    snp_variance_threshold: 0.01
+    snp_target_corr_threshold: 0.05
+    snp_correlation_threshold: 0.98

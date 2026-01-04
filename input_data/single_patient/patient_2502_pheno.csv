@@ -1,0 +1,2 @@
+patient_id,year,gender,age,location,race:africanamerican,race:asian,race:caucasian,race:hispanic,race:other,hypertension,heart_disease,smoking_history,bmi,hba1c_level,blood_glucose_level,diabetes
+2502,2019,Male,80,Arkansas,1,0,0,0,0,0,0,No Info,30.98,6,240,1

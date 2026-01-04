@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDEs
+.vscode/
+.idea/
+
+# Environments
+.env
+.venv/
+venv/
+
+# Data
+data/raw/
+data/processed/
+data/uploads
+data/database.db
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Internal data (ignore contents)
+data/raw/*
+data/uploads/*
+data/processed/*
+data/database.db
+
+# Allow folder structure
+!data/raw/.gitkeep
+!data/uploads/.gitkeep
+!data/processed/.gitkeep
